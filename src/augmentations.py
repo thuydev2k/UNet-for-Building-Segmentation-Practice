@@ -1,4 +1,4 @@
-import albumentations as A
+import albumentations as album
 from utils import to_tensor
 
 def get_training_augmentation():

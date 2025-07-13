@@ -1,3 +1,7 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import panda as pd
+
 def visualize(**images):
     """
     Plot images in one row
@@ -67,3 +71,40 @@ def colour_code_segmentation(image, label_values):
     x = colour_codes[image.astype(int)]
 
     return x
+
+def load_class_info():
+    class_dict = pd.read_csv("../input/massachusetts-buildings-dataset/label_class_dict.csv")
+    class_names = class_dict['name'].tolist()
+    class_rgb_values = class_dict[['r', 'g', 'b']].values.tolist()
+
+    print('All dataset classes and their corresponding RGB values in labels:')
+    print('Class Names: ', class_names)
+    print('Class RGB values: ', class_rgb_values)
+    return class_names, class_rgb_values
+
+def filter_classes(class_names, class_rgb_values):
+    select_classes = ['background', 'building']
+
+    # Get RGB values of required classes
+    select_class_indices = [class_names.index(cls.lower()) for cls in select_classes]
+    select_class_rgb_values =  np.array(class_rgb_values)[select_class_indices]
+
+    print('Selected classes and their corresponding RGB values in labels:')
+    print('Class Names: ', class_names)
+    print('Class RGB values: ', class_rgb_values)
+    return select_class_indices, select_class_rgb_values
+
+# Center crop padded image / mask to original image dims
+def crop_image(image, target_image_dims=[1500,1500,3]):
+   
+    target_size = target_image_dims[0]
+    image_size = len(image)
+    padding = (image_size - target_size) // 2
+
+    return image[
+        padding:image_size - padding,
+        padding:image_size - padding,
+        :,
+    ]
+
+
