@@ -4,11 +4,12 @@ import torch
 import numpy as np
 import pandas as pd
 import segmentation_models_pytorch as smp
-from src.datasets import BuildingsDataset
+from torch.utils.data import DataLoader
+from datasets import BuildingsDataset
 from utils import visualize, colour_code_segmentation, reverse_one_hot
-from augmentations import get_training_augmentation
-from models.unet import model
-from config import x_train_dir, y_train_dir, DEVICE, EPOCHS
+from augmentations import get_training_augmentation, get_preprocessing, get_validation_augmentation
+from unet import model
+from config import x_train_dir, y_train_dir, x_valid_dir, y_valid_dir, DEVICE, EPOCHS, TRAINING
 from utils import load_class_info, filter_classes
 
 class_names, class_rgb_values = load_class_info()
@@ -18,11 +19,11 @@ dataset = BuildingsDataset(x_train_dir, y_train_dir, class_rgb_values=select_cla
 random_idx = random.randint(0, len(dataset)-1)
 image, mask = dataset[2]
 
-visualize(
-    original_image = image,
-    ground_truth_mask = colour_code_segmentation(reverse_one_hot(mask), select_class_rgb_values),
-    one_hot_encoded_mask = reverse_one_hot(mask)
-)
+# visualize(
+#     original_image = image,
+#     ground_truth_mask = colour_code_segmentation(reverse_one_hot(mask), select_class_rgb_values),
+#     one_hot_encoded_mask = reverse_one_hot(mask)
+# )
 
 augmented_dataset = BuildingsDataset(
     x_train_dir, y_train_dir, 
@@ -33,13 +34,13 @@ augmented_dataset = BuildingsDataset(
 random_idx = random.randint(0, len(augmented_dataset)-1)
 
 # Different augmentations on a random image/mask pair (256*256 crop)
-for i in range(3):
-    image, mask = augmented_dataset[random_idx]
-    visualize(
-        original_image = image,
-        ground_truth_mask = colour_code_segmentation(reverse_one_hot(mask), select_class_rgb_values),
-        one_hot_encoded_mask = reverse_one_hot(mask)
-    )
+# for i in range(3):
+#     image, mask = augmented_dataset[random_idx]
+#     visualize(
+#         original_image = image,
+#         ground_truth_mask = colour_code_segmentation(reverse_one_hot(mask), select_class_rgb_values),
+#         one_hot_encoded_mask = reverse_one_hot(mask)
+#     )
 
 # define loss function
 loss = smp.utils.losses.DiceLoss()
@@ -80,9 +81,27 @@ valid_epoch = smp.utils.train.ValidEpoch(
     verbose=True,
 )
 
-def train_model(model, train_loader, valid_loader):
+# Get train and val dataset instances
+train_dataset = BuildingsDataset(
+    x_train_dir, y_train_dir, 
+    augmentation=get_training_augmentation(),
+    preprocessing=get_preprocessing(preprocessing_fn=None),
+    class_rgb_values=select_class_rgb_values,
+)
+
+valid_dataset = BuildingsDataset(
+    x_valid_dir, y_valid_dir, 
+    augmentation=get_validation_augmentation(), 
+    preprocessing=get_preprocessing(preprocessing_fn=None),
+    class_rgb_values=select_class_rgb_values,
+)
+
+def train_model(model):
     best_iou_score = 0.0
     train_logs_list, valid_logs_list = [], []
+
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=12)
+    valid_loader = DataLoader(valid_dataset, batch_size=1, shuffle=False, num_workers=4)
 
     for i in range(0, EPOCHS):
 
@@ -101,3 +120,32 @@ def train_model(model, train_loader, valid_loader):
             print('Model saved!')
 
     return train_logs_list, valid_logs_list
+
+if __name__ == '__main__':
+    train_logs_list, valid_logs_list = train_model(model)
+
+    train_logs_df = pd.DataFrame(train_logs_list)
+    valid_logs_df = pd.DataFrame(valid_logs_list)
+    train_logs_df.T
+
+    plt.figure(figsize=(20,8))
+    plt.plot(train_logs_df.index.tolist(), train_logs_df.iou_score.tolist(), lw=3, label = 'Train')
+    plt.plot(valid_logs_df.index.tolist(), valid_logs_df.iou_score.tolist(), lw=3, label = 'Valid')
+    plt.xlabel('Epochs', fontsize=21)
+    plt.ylabel('IoU Score', fontsize=21)
+    plt.title('IoU Score Plot', fontsize=21)
+    plt.legend(loc='best', fontsize=16)
+    plt.grid()
+    plt.savefig('iou_score_plot.png')
+    plt.show()
+
+    plt.figure(figsize=(20,8))
+    plt.plot(train_logs_df.index.tolist(), train_logs_df.dice_loss.tolist(), lw=3, label = 'Train')
+    plt.plot(valid_logs_df.index.tolist(), valid_logs_df.dice_loss.tolist(), lw=3, label = 'Valid')
+    plt.xlabel('Epochs', fontsize=21)
+    plt.ylabel('Dice Loss', fontsize=21)
+    plt.title('Dice Loss Plot', fontsize=21)
+    plt.legend(loc='best', fontsize=16)
+    plt.grid()
+    plt.savefig('dice_loss_plot.png')
+    plt.show()

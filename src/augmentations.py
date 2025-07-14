@@ -1,9 +1,8 @@
 import albumentations as album
-from utils import to_tensor
 
 def get_training_augmentation():
     train_transform = [    
-        album.RandomCrop(height=256, width=256, always_apply=True),
+        album.RandomCrop(height=256, width=256),
         album.OneOf(
             [
                 album.HorizontalFlip(p=1),
@@ -19,7 +18,7 @@ def get_training_augmentation():
 def get_validation_augmentation():   
     # Add sufficient padding to ensure image is divisible by 32
     test_transform = [
-        album.PadIfNeeded(min_height=1536, min_width=1536, always_apply=True, border_mode=0),
+        album.PadIfNeeded(min_height=1536, min_width=1536, border_mode=0),
     ]
     return album.Compose(test_transform)
 

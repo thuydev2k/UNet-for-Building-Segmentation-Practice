@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import panda as pd
+import pandas as pd
+import torch.nn as nn
 
 def visualize(**images):
     """
@@ -73,7 +74,7 @@ def colour_code_segmentation(image, label_values):
     return x
 
 def load_class_info():
-    class_dict = pd.read_csv("../input/massachusetts-buildings-dataset/label_class_dict.csv")
+    class_dict = pd.read_csv("../data/label_class_dict.csv")
     class_names = class_dict['name'].tolist()
     class_rgb_values = class_dict[['r', 'g', 'b']].values.tolist()
 
@@ -106,5 +107,3 @@ def crop_image(image, target_image_dims=[1500,1500,3]):
         padding:image_size - padding,
         :,
     ]
-
-
