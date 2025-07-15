@@ -2,17 +2,14 @@ import os, cv2
 import torch
 import numpy as np
 import random
-import pandas as pd
 import segmentation_models_pytorch as smp
-import matplotlib.pyplot as plt
 from unet import model
 from datasets import BuildingsDataset
-from augmentations import get_training_augmentation, get_preprocessing, get_validation_augmentation
+from augmentations import get_preprocessing, get_validation_augmentation
 from utils import visualize, colour_code_segmentation, reverse_one_hot
 from config import x_test_dir, y_test_dir
 from utils import load_class_info, filter_classes, crop_image
-from config import x_train_dir, y_train_dir, x_valid_dir, y_valid_dir, DEVICE
-from train import train_model
+from config import DEVICE
 
 class_names, class_rgb_values = load_class_info()
 select_classes, select_class_rgb_values = filter_classes(class_names, class_rgb_values)

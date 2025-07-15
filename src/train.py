@@ -4,12 +4,12 @@ import torch
 import numpy as np
 import pandas as pd
 import segmentation_models_pytorch as smp
+import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from datasets import BuildingsDataset
-from utils import visualize, colour_code_segmentation, reverse_one_hot
 from augmentations import get_training_augmentation, get_preprocessing, get_validation_augmentation
 from unet import model
-from config import x_train_dir, y_train_dir, x_valid_dir, y_valid_dir, DEVICE, EPOCHS, TRAINING
+from config import x_train_dir, y_train_dir, x_valid_dir, y_valid_dir, DEVICE, EPOCHS
 from utils import load_class_info, filter_classes
 
 class_names, class_rgb_values = load_class_info()
